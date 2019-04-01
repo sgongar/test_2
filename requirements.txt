@@ -1,0 +1,4 @@
+pandas==0.24.2
+geopy==1.19.0
+requests==2.21.0
+pygeocoder==1.2.5
