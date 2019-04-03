@@ -1,41 +1,68 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
+import json
 
 import flask
 from flask import request, jsonify
+from flask import render_template
 
+from utils import haversine
 from prepare_dataframe import extract_df_restaurants
+
+"""
+   Copyright 2019 Samuel Góngora García
+   Licensed under the Apache License, Version 2.0 (the "License");
+   you may not use this file except in compliance with the License.
+   You may obtain a copy of the License at
+       http://www.apache.org/licenses/LICENSE-2.0
+   Unless required by applicable law or agreed to in writing, software
+   distributed under the License is distributed on an "AS IS" BASIS,
+   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+   See the License for the specific language governing permissions and
+   limitations under the License.
+:Author:
+    Samuel Góngora García (s.gongoragarcia@gmail.com)
+"""
+__author__ = 's.gongoragarcia@gmail.com'
+
 
 app = flask.Flask(__name__)
 app.config["DEBUG"] = True
 
-books = [
-    {'lon': 0,
-     'title': 'A Fire Upon the Deep',
-     'author': 'Vernor Vinge',
-     'first_sentence': 'The coldsleep itself was dreamless.',
-     'year_published': '1992'},
-    {'lon': 1,
-     'title': 'The Ones Who Walk Away From Omelas',
-     'author': 'Ursula K. Le Guin',
-     'first_sentence': 'With a clamor of bells that set the swallows soaring, the Festival of Summer came to the city Omelas, bright-towered by the sea.',
-     'published': '1973'},
-    {'lon': 2,
-     'title': 'Dhalgren',
-     'author': 'Samuel R. Delany',
-     'first_sentence': 'to wound the autumnal city.',
-     'published': '1975'}
-]
+
+def create_dict(df, radious, elements):
+    """
+
+    @param df:
+    @param lon:
+    @param lat:
+
+    @return data:
+    """
+    df = df[df['distance'] < radious]
+    data = df.sort_values(by='distance', ascending=True)
+    data = data.reset_index(drop=True)
+    data = data.drop(list(range(elements, df['distance'].size)))
+
+    return data
 
 
-@app.route('/restaurants/near/', methods=['GET'])
+@app.route('/restaurants/near/')
 def near():
-    lat = request.args.get('lat')
-    lon = request.args.get('lon')
+    lat = request.args.get('lat', default=1, type=float)
+    lon = request.args.get('lon', default=1, type=float)
 
     df = extract_df_restaurants(cuisine='all', wheelchair=False)
-    print(df)
+    df['distance'] = haversine(lat, lon, df['lat'].values, df['lon'].values)
 
-    return(books)
+    out_df = create_dict(df, radious=10.0, elements=10)
+
+    print(out_df.to_json(orient='records'))
+
+    # address = request.args.get('address', default='street', type=str)
+    # print(address)
+
+    return('test')
+
 
 app.run()

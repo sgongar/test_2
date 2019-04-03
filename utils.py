@@ -4,6 +4,7 @@ import geopy.distance
 import numpy as np
 import pandas as pd
 
+
 """
    Copyright 2019 Samuel Góngora García
    Licensed under the Apache License, Version 2.0 (the "License");
@@ -104,3 +105,16 @@ def look_spots(i_df, first_lat, last_lat, first_lon, last_lon):
     i_df_spots = i_df_spots[last_lon > i_df_spots['lon']]
 
     return(i_df_spots)
+
+
+# Define a basic Haversine distance formula
+def haversine(lat1, lon1, lat2, lon2):
+    MILES = 3959
+    lat1, lon1, lat2, lon2 = map(np.deg2rad, [lat1, lon1, lat2, lon2])
+    dlat = lat2 - lat1
+    dlon = lon2 - lon1
+    a = np.sin(dlat / 2)**2 + np.cos(lat1) * np.cos(lat2) * np.sin(dlon / 2)**2
+    c = 2 * np.arcsin(np.sqrt(a))
+    total_km = MILES * c * 1.609344
+
+    return total_km
