@@ -5,6 +5,8 @@ import json
 import flask
 from flask import request, jsonify
 from flask import render_template
+from geopy.geocoders import Nominatim
+from geopy.exc import GeopyError
 
 from utils import haversine
 from prepare_dataframe import extract_df_restaurants
@@ -47,22 +49,43 @@ def create_dict(df, radious, elements):
     return data
 
 
+def make_request(address):
+    """
+    Set the lat_long field, if the appropriate fields are filled
+    """
+    geolocator = Nominatim()
+    try:
+        location = geolocator.geocode(address)
+        lat_long = {"type": "Point",
+                    "coordinates": [location.longitude, location.latitude]}
+    except (GeopyError, AttributeError):
+        pass
+    return(lat_long)
+
+
 @app.route('/restaurants/near/')
 def near():
-    lat = request.args.get('lat', default=1, type=float)
-    lon = request.args.get('lon', default=1, type=float)
+    lat = request.args.get('lat', default=0, type=float)
+    lon = request.args.get('lon', default=0, type=float)
+    address = request.args.get('address', default='empty', type=str)
 
-    df = extract_df_restaurants(cuisine='all', wheelchair=False)
-    df['distance'] = haversine(lat, lon, df['lat'].values, df['lon'].values)
+    if lat is not 0 and lon is not 0:
+        df = extract_df_restaurants(cuisine='all', wheelchair=False)
+        df['distance'] = haversine(lat, lon, df['lat'].values,
+                                   df['lon'].values)
+        out_df = create_dict(df, radious=10.0, elements=10)
 
-    out_df = create_dict(df, radious=10.0, elements=10)
+        print(out_df.to_json(orient='records'))
+    elif address is not 'empty':
+        lat_long = make_request(address)
+    else:
+        print('zero')
 
-    print(out_df.to_json(orient='records'))
+    """
 
-    # address = request.args.get('address', default='street', type=str)
-    # print(address)
+
+    """
 
     return('test')
-
 
 app.run()
